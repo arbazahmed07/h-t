@@ -3,6 +3,7 @@ import axios from 'axios';
 // const API_URL = '/api/auth/';
 let API_URL= import.meta.env.VITE_BACKEND_URL ;
 
+
 // Register user
 const register = async (userData) => {
   const response = await axios.post(`${API_URL}/api/auth/register`, userData);
@@ -38,7 +39,8 @@ const updateProfile = async (userData, token) => {
     }
   };
 
-  const response = await axios.put(`${API_URL}/api/auth/profile`, userData, config);
+  // Fix the URL to match the server endpoint
+  const response = await axios.put(`${API_URL}/api/auth/update-profile`, userData, config);
 
   // Update the stored user data with new profile info
   if (response.data) {

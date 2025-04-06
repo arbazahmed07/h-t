@@ -5,55 +5,69 @@ import React from 'react';
 // Create a singleton notification sound that can be reused
 let notificationSound;
 
+// Keep just this path since we know it's the correct one
+const soundPath = '../assets/notification-sound.mp3';
+
 // Initialize the notification sound (call this when your app starts)
 export const initNotificationSound = () => {
-  // Try all possible paths to the notification sound file
   try {
-    notificationSound = new Audio('/assets/notification-sound.mp3');
+    // Create and load the audio only once
+    notificationSound = new Audio(soundPath);
     
-    // Add a load event listener to see if the file can be loaded
+    // Preload the audio
+    notificationSound.load();
+    
+    console.log('Notification sound initialized');
+    
+    // Optional: Test sound loaded correctly
     notificationSound.addEventListener('canplaythrough', () => {
       console.log('Notification sound loaded successfully');
     });
     
-    // Add error handling to try fallback paths
-    notificationSound.addEventListener('error', () => {
-      console.log('Trying alternate sound path...');
-      try {
-        notificationSound = new Audio('/notification-sound.mp3');
-      } catch (err) {
-        console.error('Could not load notification sound:', err);
-      }
+    notificationSound.addEventListener('error', (e) => {
+      console.error('Error loading notification sound:', e);
     });
-    
-    // Preload the audio
-    notificationSound.load();
   } catch (err) {
-    console.error('Error initializing notification sound:', err);
+    console.error('Failed to initialize notification sound:', err);
   }
 };
 
-// Play the notification sound
+// Play the notification sound with better error handling
 export const playNotificationSound = () => {
   if (notificationSound) {
     // Reset the sound to the beginning if it's already playing
     notificationSound.currentTime = 0;
     
-    // Create a promise to play the sound
+    // Play with user interaction context to avoid browser restrictions
     const playPromise = notificationSound.play();
     
-    // Handle play promise
     if (playPromise !== undefined) {
       playPromise.catch(err => {
         console.error('Failed to play notification sound:', err);
-        // Try with a new Audio instance as a fallback
+        
+        // Create a new instance as a fallback approach
         try {
-          new Audio('/assets/notification-sound.mp3').play();
-        } catch (innerErr) {
-          console.error('Fallback sound also failed:', innerErr);
+          const fallbackSound = new Audio(soundPath);
+          fallbackSound.play().catch(innerErr => {
+            console.error('Fallback sound also failed:', innerErr);
+          });
+        } catch (e) {
+          console.error('Could not create fallback sound:', e);
         }
       });
     }
+  } else {
+    console.warn('Notification sound not initialized yet, creating now');
+    initNotificationSound();
+    
+    // Try to play immediately after initialization
+    setTimeout(() => {
+      if (notificationSound) {
+        notificationSound.play().catch(err => {
+          console.error('Delayed sound play failed:', err);
+        });
+      }
+    }, 100);
   }
 };
 

@@ -85,6 +85,7 @@ const loginUser = async (req, res) => {
 // @access  Private
 const getUserProfile = async (req, res) => {
   try {
+    console.log("hhelloo")
     const user = await User.findById(req.user._id).select('-password');
     
     if (user) {
@@ -269,6 +270,52 @@ const updateSettings = async (req, res) => {
   }
 };
 
+// @desc    Update user profile
+// @route   PUT /api/auth/update-profile
+// @access  Private
+const updateProfile = async (req, res) => {
+  try {
+    const { username, email, avatar } = req.body;
+    
+    // Find the user by id
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if email exists and is different from current
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
+    }
+    
+    // Update user fields
+    if (username) user.username = username;
+    if (email) user.email = email;
+    if (avatar) user.avatar = avatar;
+    
+    // Save the updated user
+    await user.save();
+    
+    // Return the updated user (without password)
+    res.status(200).json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      avatar: user.avatar,
+      level: user.level,
+      experience: user.experience,
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = { 
   registerUser, 
   loginUser, 
@@ -277,5 +324,6 @@ module.exports = {
   validateResetToken, 
   resetPassword,
   updatePassword,
-  updateSettings
+  updateSettings,
+  updateProfile  // Add this line
 };

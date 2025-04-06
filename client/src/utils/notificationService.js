@@ -1,5 +1,7 @@
 // Notification service for handling browser notifications
 
+import { showNotification, playNotificationSound } from './notificationHelper';
+
 // Check if browser supports notifications
 export const checkNotificationPermission = async () => {
   if (!("Notification" in window)) {
@@ -20,22 +22,29 @@ export const checkNotificationPermission = async () => {
 };
 
 // Send browser notification
-export const sendNotification = (title, options = {}) => {
-  if (!("Notification" in window)) {
-    return;
-  }
+export const sendNotification = (title, body, options = {}) => {
+  // Show a popup toast notification
+  showNotification({
+    title: title,
+    message: body,
+    type: options.type || 'reminder'
+  });
   
-  if (Notification.permission === "granted") {
+  // Always play notification sound when sending notification
+  playNotificationSound();
+  
+  // If browser notifications are supported and permission granted, show browser notification too
+  if ("Notification" in window && Notification.permission === "granted") {
     const notification = new Notification(title, {
-      icon: '/logo.png',
+      body,
+      icon: '/assets/logo.png', // Assuming you have a logo
       ...options
     });
     
-    if (options.onClick) {
-      notification.onclick = options.onClick;
-    }
-    
-    return notification;
+    notification.onclick = function() {
+      window.focus();
+      this.close();
+    };
   }
 };
 
@@ -87,8 +96,7 @@ export const scheduleHabitReminders = (habits) => {
     // Schedule notification
     const timerId = setTimeout(() => {
       console.log(`Sending notification for habit: ${habit.title}`);
-      sendNotification(`Time for your habit: ${habit.title}`, {
-        body: habit.description || 'Complete this habit now to stay on track!',
+      sendNotification(`Time for your habit: ${habit.title}`, habit.description || 'Complete this habit now to stay on track!', {
         onClick: function() {
           window.focus();
           // Change this to always navigate to dashboard

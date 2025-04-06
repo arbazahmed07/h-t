@@ -22,5 +22,6 @@ router.post('/reset-password/:token', resetPassword);
 // Protected routes (require authentication)
 router.put('/update-password', protect, updatePassword);
 router.put('/settings', protect, updateSettings);
-
+// Add this to your auth routes
+router.put('/update-profile', protect, updateProfile);
 module.exports = router;

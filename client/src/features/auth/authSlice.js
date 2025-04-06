@@ -63,7 +63,7 @@ export const logout = createAsyncThunk(
 
 // Update user profile
 export const updateProfile = createAsyncThunk(
-  'auth/updateProfile',
+  `${ API_URL}/auth/updateProfile`,
   async (userData, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.user.token;

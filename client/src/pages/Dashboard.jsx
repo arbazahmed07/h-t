@@ -12,6 +12,7 @@ import LevelUpNotification from '../components/LevelUpNotification';
 import MysteryBox from '../components/MysteryBox';
 import QuizButton from '../components/Quiz/QuizButton';
 import QuizComponent from '../components/Quiz/QuizComponent';
+import { initNotificationSound, showNotification, playNotificationSound } from '../utils/notificationHelper';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -35,6 +36,11 @@ const Dashboard = () => {
     dispatch(getHabits());
   }, [dispatch, isError, message]);
   
+  // Initialize notification sound when component mounts
+  useEffect(() => {
+    initNotificationSound();
+  }, []);
+  
   // Set up habit reminders when habits are loaded
   useEffect(() => {
     if (safeHabits.length > 0) {
@@ -44,6 +50,9 @@ const Dashboard = () => {
           console.log('Scheduling reminders for habits:', safeHabits.map(h => 
             ({ id: h._id, title: h.title, reminder: h.reminderTime })));
           scheduleHabitReminders(safeHabits);
+          
+          // Set up dynamic reminders for notifications
+          setupDynamicReminders(safeHabits);
         } else {
           console.log('Notification permission denied');
         }
@@ -62,6 +71,49 @@ const Dashboard = () => {
     return () => clearInterval(intervalId);
   }, [safeHabits]);
   
+  // Function to setup dynamic reminders
+  const setupDynamicReminders = (habits) => {
+    // Clear any existing reminder timers
+    if (window.reminderTimers) {
+      window.reminderTimers.forEach(timer => clearTimeout(timer));
+    }
+    window.reminderTimers = [];
+    
+    habits.forEach(habit => {
+      if (habit.reminderEnabled && habit.reminderTime) {
+        // Parse reminder time
+        const [hours, minutes] = habit.reminderTime.split(':').map(Number);
+        
+        // Calculate time until reminder
+        const now = new Date();
+        const reminderTime = new Date();
+        reminderTime.setHours(hours, minutes, 0, 0);
+        
+        // If the time has already passed today, schedule for tomorrow
+        if (reminderTime < now) {
+          reminderTime.setDate(reminderTime.getDate() + 1);
+        }
+        
+        const timeUntilReminder = reminderTime.getTime() - now.getTime();
+        
+        // Set timeout for the reminder
+        const timerId = setTimeout(() => {
+          // Show notification
+          showNotification({
+            title: `Habit Reminder: ${habit.title}`,
+            message: `It's time to ${habit.title}`,
+            type: 'reminder'
+          });
+          
+          // Play sound explicitly
+          playNotificationSound();
+        }, timeUntilReminder);
+        
+        window.reminderTimers.push(timerId);
+      }
+    });
+  };
+
   // Check notification support
   useEffect(() => {
     const checkSupport = async () => {
